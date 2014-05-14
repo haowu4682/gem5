@@ -417,6 +417,12 @@ def makeX86System(mem_mode, numCPUs = 1, mdesc = None, self = None,
     disk2.childImage(disk('linux-bigswap2.img'))
     self.pc.south_bridge.ide.disks = [disk0, disk2]
 
+    # Networks
+    self.pc.ethernet = NSGigE(pci_bus=0, pci_dev=1, pci_func=0)
+    self.pc.ethernet.pio = self.iobus.master
+    self.pc.ethernet.config = self.iobus.master
+    self.pc.ethernet.dma = self.iobus.slave
+
     # Add in a Bios information structure.
     structures = [X86SMBiosBiosInformation()]
     self.smbios_table.structures = structures
@@ -538,6 +544,12 @@ def makeDualRoot(full_system, testSystem, driveSystem, dumpfile):
     elif hasattr(testSystem, 'tsunami'):
         self.etherlink.int0 = Parent.testsys.tsunami.ethernet.interface
         self.etherlink.int1 = Parent.drivesys.tsunami.ethernet.interface
+    elif hasattr(testSystem, 'malta'):
+        self.etherlink.int0 = Parent.testsys.malta.ethernet.interface
+        self.etherlink.int1 = Parent.drivesys.malta.ethernet.interface
+    elif hasattr(testSystem, 'pc'):
+        self.etherlink.int0 = Parent.testsys.pc.ethernet.interface
+        self.etherlink.int1 = Parent.drivesys.pc.ethernet.interface
     else:
         fatal("Don't know how to connect these system together")
 

@@ -71,7 +71,7 @@ class GHBPrefetcher : public BasePrefetcher
     ~GHBPrefetcher() {}
 
     void calculatePrefetch(PacketPtr &pkt, std::list<Addr> &addresses,
-                           std::list<Cycles> &delays);
+                           std::list<Cycles> &delays, bool mshr_hit);
 };
 
 #endif // __MEM_CACHE_PREFETCH_GHB_PREFETCHER_HH__

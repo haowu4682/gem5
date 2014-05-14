@@ -75,6 +75,8 @@ def config_cache(options, system):
                                      width = 32)
         system.l2.cpu_side = system.tol2bus.master
         system.l2.mem_side = system.membus.slave
+        #system.l2.prefetcher = ISBPrefetcher(degree=1, lookahead=1) # latency='10ns')
+        system.l2.prefetcher = AMPMPrefetcher(degree=1, lookahead=1) # latency='10ns')
 
     for i in xrange(options.num_cpus):
         if options.caches:

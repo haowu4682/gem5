@@ -57,6 +57,10 @@
 
 class BaseCache;
 
+extern int contextId;
+extern int threadId;
+extern Tick current_prefetch_tick;
+
 class BasePrefetcher : public ClockedObject
 {
   protected:
@@ -145,7 +149,7 @@ class BasePrefetcher : public ClockedObject
      * misses, depending on cache parameters.)
      * @retval Time of next prefetch availability, or 0 if none.
      */
-    Tick notify(PacketPtr &pkt, Tick tick);
+    Tick notify(PacketPtr &pkt, Tick tick, bool mshr_hit);
 
     bool inCache(Addr addr, bool is_secure);
 
@@ -165,7 +169,13 @@ class BasePrefetcher : public ClockedObject
 
     virtual void calculatePrefetch(PacketPtr &pkt,
                                    std::list<Addr> &addresses,
-                                   std::list<Cycles> &delays) = 0;
+                                   std::list<Cycles> &delays,
+                                   bool mshr_hit);
+    bool InitPrefetch(Addr addr, int delay = 0);
+
+    virtual void IssuePrefetchCandidate(Addr key, Addr trigger_addr, bool mshr_hit, bool hit)
+    {
+    }
 
     std::list<DeferredPacket>::iterator inPrefetch(Addr address, bool is_secure);
 

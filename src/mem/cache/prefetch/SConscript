@@ -36,4 +36,8 @@ Source('base.cc')
 Source('ghb.cc')
 Source('stride.cc')
 Source('tagged.cc')
+Source('ampm.cc')
+Source('isb.cc')
+Source('superstl.cc')
+Source('address_mapping_cache.cc')
 

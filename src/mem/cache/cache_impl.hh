@@ -513,7 +513,9 @@ Cache<TagStore>::recvTimingReq(PacketPtr pkt)
         if (prefetcher && (prefetchOnAccess || (blk && blk->wasPrefetched()))) {
             if (blk)
                 blk->status &= ~BlkHWPrefetched;
-            next_pf_time = prefetcher->notify(pkt, time);
+            Addr blk_addr = blockAlign(pkt->getAddr());
+            MSHR *mshr = mshrQueue.findMatch(blk_addr, pkt->isSecure());
+            next_pf_time = prefetcher->notify(pkt, time, (mshr!=NULL));
         }
 
         if (needsResponse) {
@@ -565,7 +567,7 @@ Cache<TagStore>::recvTimingReq(PacketPtr pkt)
             // already allocated for this, we need to let the prefetcher know
             // about the request
             if (prefetcher) {
-                next_pf_time = prefetcher->notify(pkt, time);
+                next_pf_time = prefetcher->notify(pkt, time, true);
             }
         } else {
             // no MSHR
@@ -601,7 +603,7 @@ Cache<TagStore>::recvTimingReq(PacketPtr pkt)
             }
 
             if (prefetcher) {
-                next_pf_time = prefetcher->notify(pkt, time);
+                next_pf_time = prefetcher->notify(pkt, time, false);
             }
         }
     }

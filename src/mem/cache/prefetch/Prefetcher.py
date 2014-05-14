@@ -54,6 +54,8 @@ class BasePrefetcher(ClockedObject):
          "Squash prefetches with a later time on a subsequent miss")
     degree = Param.Int(1,
          "Degree of the prefetch depth")
+    lookahead = Param.Int(1,
+         "Lookahead of the ISB prefetch")
     latency = Param.Cycles('1', "Latency of the prefetcher")
     use_master_id = Param.Bool(True,
          "Use the master id to separate calculations of prefetches")
@@ -68,6 +70,16 @@ class BasePrefetcher(ClockedObject):
     inst_tagged = Param.Bool(True,
          "Perform a tagged prefetch for instruction fetches always")
     sys = Param.System(Parent.any, "System this device belongs to")
+
+class AMPMPrefetcher(BasePrefetcher):
+    type = 'AMPMPrefetcher'
+    cxx_class = 'AMPMPrefetcher'
+    cxx_header = "mem/cache/prefetch/ampm.hh"
+
+class ISBPrefetcher(BasePrefetcher):
+    type = 'ISBPrefetcher'
+    cxx_class = 'ISBPrefetcher'
+    cxx_header = "mem/cache/prefetch/isb.hh"
 
 class GHBPrefetcher(BasePrefetcher):
     type = 'GHBPrefetcher'

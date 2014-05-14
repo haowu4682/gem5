@@ -56,6 +56,12 @@
 #include "mem/request.hh"
 #include "sim/system.hh"
 
+std::list<Addr> addresses;
+std::list<Cycles> delays;
+int contextId;
+int threadId;
+Tick current_prefetch_tick;
+
 BasePrefetcher::BasePrefetcher(const Params *p)
     : ClockedObject(p), size(p->size), latency(p->latency), degree(p->degree),
       useMasterId(p->use_master_id), pageStop(!p->cross_pages),
@@ -185,7 +191,7 @@ BasePrefetcher::getPacket()
 
 
 Tick
-BasePrefetcher::notify(PacketPtr &pkt, Tick tick)
+BasePrefetcher::notify(PacketPtr &pkt, Tick tick, bool mshr_hit)
 {
     // Don't consult the prefetcher if any of the following conditons are true
     // 1) The request is uncacheable
@@ -238,12 +244,13 @@ BasePrefetcher::notify(PacketPtr &pkt, Tick tick)
         }
 
 
-        std::list<Addr> addresses;
-        std::list<Cycles> delays;
-        calculatePrefetch(pkt, addresses, delays);
+        addresses.clear();
+        delays.clear();
+        calculatePrefetch(pkt, addresses, delays, mshr_hit);
 
         std::list<Addr>::iterator addrIter = addresses.begin();
         std::list<Cycles>::iterator delayIter = delays.begin();
+
         for (; addrIter != addresses.end(); ++addrIter, ++delayIter) {
             Addr addr = *addrIter;
 
@@ -315,4 +322,35 @@ BasePrefetcher::samePage(Addr a, Addr b)
     return roundDown(a, TheISA::VMPageSize) == roundDown(b, TheISA::VMPageSize);
 }
 
+//std::map<PacketPtr, std::list<Addr>* > address_map;
+//std::map<PacketPtr, std::list<Cycles>* > delay_map;
+
+void BasePrefetcher::calculatePrefetch(PacketPtr &pkt,
+                               std::list<Addr> &addresses,
+                               std::list<Cycles> &delays,
+                               bool mshr_hit)
+{
+    Addr pc = pkt->req->getPC();
+    Addr blk_addr = pkt->getAddr() & ~(Addr)(blkSize-1);
+    bool hit = inCache(pkt->getAddr(), true);
+
+    contextId = pkt->req->contextId();
+    threadId = pkt->req->threadId();
+
+    //address_map[pkt] = &addresses;
+    //delay_map[pkt] = &delays;
+
+    IssuePrefetchCandidate(pc, blk_addr, mshr_hit, hit);
+
+    //address_map.erase(pkt);
+    //delay_map.erase(pkt);
+}
+
+bool BasePrefetcher::InitPrefetch(Addr addr, int delay)
+{
+    addresses.push_back(addr);
+    delays.push_back(Cycles(delay));
+
+    return true;
+}
 
