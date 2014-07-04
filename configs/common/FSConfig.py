@@ -325,13 +325,16 @@ def connectX86ClassicSystem(x86_sys, numCPUs):
     interrupts_address_space_base = 0xa000000000000000
     APIC_range_size = 1 << 12;
 
-    x86_sys.membus = MemBus()
+    #x86_sys.membus = MemBus()
+    x86_sys.membus = CoherentBus()
 
     # North Bridge
     x86_sys.iobus = NoncoherentBus()
     x86_sys.bridge = Bridge(delay='50ns')
     x86_sys.bridge.master = x86_sys.iobus.slave
-    x86_sys.bridge.slave = x86_sys.membus.master
+    #x86_sys.bridge.slave = x86_sys.membus.master
+    x86_sys.bridge.slave = x86_sys.membus.default
+    #x86_sys.membus.default = x86_sys.bridge.slave
     # Allow the bridge to pass through the IO APIC (two pages),
     # everything in the IO address range up to the local APIC, and
     # then the entire PCI address space and beyond
@@ -418,7 +421,14 @@ def makeX86System(mem_mode, numCPUs = 1, mdesc = None, self = None,
     self.pc.south_bridge.ide.disks = [disk0, disk2]
 
     # Networks
-    self.pc.ethernet = NSGigE(pci_bus=0, pci_dev=1, pci_func=0)
+    #self.pc.ethernet = NSGigE(pci_bus=0, pci_dev=1, pci_func=0)
+    #self.pc.ethernet.pio = self.iobus.master
+    #self.pc.ethernet.config = self.iobus.master
+    #self.pc.ethernet.dma = self.iobus.slave
+
+    # Ethernet
+    self.pc.ethernet = IGbE_e1000(pci_bus=0, pci_dev=2, pci_func=0,
+                                  InterruptLine=13, InterruptPin=1)
     self.pc.ethernet.pio = self.iobus.master
     self.pc.ethernet.config = self.iobus.master
     self.pc.ethernet.dma = self.iobus.slave
@@ -444,18 +454,18 @@ def makeX86System(mem_mode, numCPUs = 1, mdesc = None, self = None,
             address = 0xfec00000)
     self.pc.south_bridge.io_apic.apic_id = io_apic.id
     base_entries.append(io_apic)
-    isa_bus = X86IntelMPBus(bus_id = 0, bus_type='ISA')
-    base_entries.append(isa_bus)
-    pci_bus = X86IntelMPBus(bus_id = 1, bus_type='PCI')
+    pci_bus = X86IntelMPBus(bus_id = 0, bus_type='PCI')
     base_entries.append(pci_bus)
-    connect_busses = X86IntelMPBusHierarchy(bus_id=0,
-            subtractive_decode=True, parent_bus=1)
+    isa_bus = X86IntelMPBus(bus_id = 1, bus_type='ISA')
+    base_entries.append(isa_bus)
+    connect_busses = X86IntelMPBusHierarchy(bus_id=1,
+            subtractive_decode=True, parent_bus=0)
     ext_entries.append(connect_busses)
     pci_dev4_inta = X86IntelMPIOIntAssignment(
             interrupt_type = 'INT',
             polarity = 'ConformPolarity',
             trigger = 'ConformTrigger',
-            source_bus_id = 1,
+            source_bus_id = 0,
             source_bus_irq = 0 + (4 << 2),
             dest_io_apic_id = io_apic.id,
             dest_io_apic_intin = 16)
@@ -465,7 +475,7 @@ def makeX86System(mem_mode, numCPUs = 1, mdesc = None, self = None,
                 interrupt_type = 'ExtInt',
                 polarity = 'ConformPolarity',
                 trigger = 'ConformTrigger',
-                source_bus_id = 0,
+                source_bus_id = 1,
                 source_bus_irq = irq,
                 dest_io_apic_id = io_apic.id,
                 dest_io_apic_intin = 0)
@@ -474,7 +484,7 @@ def makeX86System(mem_mode, numCPUs = 1, mdesc = None, self = None,
                 interrupt_type = 'INT',
                 polarity = 'ConformPolarity',
                 trigger = 'ConformTrigger',
-                source_bus_id = 0,
+                source_bus_id = 1,
                 source_bus_irq = irq,
                 dest_io_apic_id = io_apic.id,
                 dest_io_apic_intin = apicPin)
